@@ -112,7 +112,7 @@ calculate_ping_times_bash() {
 
     local hour="${start_time%%:*}"
     local minute="${start_time##*:}"
-    local start_minutes=$((hour * 60 + minute))
+    local start_minutes=$((10#$hour * 60 + 10#$minute))
 
     local times=()
     local current_minutes=$start_minutes
