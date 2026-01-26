@@ -25,15 +25,15 @@ def calculate_ping_times(config: Config) -> list[str]:
     end_hour, end_minute = map(int, config.work_end_time.split(":"))
     end_time_minutes = end_hour * 60 + end_minute
 
-    workday_minutes = end_time_minutes - start_time_minutes
-    ping_interval_minutes = workday_minutes // 3
+    ping_interval_minutes = 5 * 60  # 5 hours
 
     times = []
-    for i in range(3):
-        minutes = start_time_minutes + ping_interval_minutes * i
-        hour = minutes // 60
-        minute = minutes % 60
+    current_time_minutes = start_time_minutes
+    while current_time_minutes <= end_time_minutes:
+        hour = current_time_minutes // 60
+        minute = current_time_minutes % 60
         times.append(f"{hour:02d}:{minute:02d}")
+        current_time_minutes += ping_interval_minutes
 
     return times
 
