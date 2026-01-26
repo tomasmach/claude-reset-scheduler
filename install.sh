@@ -17,6 +17,9 @@ SERVICE_USER="claude-reset-scheduler"
 
 # Global state
 USE_EXISTING_CONFIG=false
+CONFIG_ACTIVE_DAYS=""
+CONFIG_FIRST_PING=""
+CONFIG_NUM_PINGS=""
 
 # Trap for cleanup on error
 trap 'cleanup_on_error' ERR
@@ -204,7 +207,114 @@ check_existing_config() {
         esac
     done
 }
-interactive_config() { :; }
+interactive_config() {
+    # Skip if using existing config
+    if [ "$USE_EXISTING_CONFIG" = true ]; then
+        return 0
+    fi
+
+    info ""
+    info "======================================"
+    info "  Configuration Wizard"
+    info "======================================"
+    info ""
+    info "This wizard will help you configure the ping schedule."
+    info ""
+
+    # Prompt for active days
+    while true; do
+        info "Which days should be active?"
+        info "  0=Monday, 1=Tuesday, 2=Wednesday, 3=Thursday,"
+        info "  4=Friday, 5=Saturday, 6=Sunday"
+        info "  Example: 0,1,2,3,4 for weekdays"
+        read -p "Active days: " days_input
+
+        if validate_days "$days_input"; then
+            CONFIG_ACTIVE_DAYS="${days_input// /}"
+            success "Days validated: $CONFIG_ACTIVE_DAYS"
+            break
+        else
+            error "Invalid format. Enter comma-separated numbers 0-6 (no duplicates)"
+        fi
+    done
+
+    info ""
+
+    # Prompt for first ping time
+    while true; do
+        info "What time should the first ping occur? (24-hour format)"
+        info "  Example: 09:00 for 9 AM"
+        read -p "First ping time: " time_input
+
+        if validate_time "$time_input"; then
+            CONFIG_FIRST_PING="$time_input"
+            success "Time validated: $CONFIG_FIRST_PING"
+            break
+        else
+            error "Invalid format. Enter time as HH:MM (00:00 to 23:59)"
+        fi
+    done
+
+    info ""
+
+    # Prompt for number of pings
+    while true; do
+        info "How many pings per day? (1-5)"
+        info "  Pings occur every 5 hours starting from first ping time"
+        read -p "Number of pings: " pings_input
+
+        if validate_pings "$pings_input"; then
+            CONFIG_NUM_PINGS="$pings_input"
+            success "Number validated: $CONFIG_NUM_PINGS"
+            break
+        else
+            error "Invalid number. Enter a number between 1 and 5"
+        fi
+    done
+
+    info ""
+    info "======================================"
+    info "  Configuration Summary"
+    info "======================================"
+    info ""
+
+    # Show active days with names
+    info "Active days:"
+    IFS=',' read -ra day_array <<< "$CONFIG_ACTIVE_DAYS"
+    for day in "${day_array[@]}"; do
+        info "  - $(day_name "$day")"
+    done
+
+    info ""
+    info "Ping schedule:"
+
+    # Calculate and show ping times
+    read -ra times <<< "$(calculate_ping_times_bash "$CONFIG_FIRST_PING" "$CONFIG_NUM_PINGS")"
+    for time in "${times[@]}"; do
+        info "  - $time"
+    done
+
+    info ""
+
+    # Confirmation prompt
+    while true; do
+        read -p "$(echo -e "${YELLOW}Proceed with this configuration? (y/n)${NC} ")" confirm
+        case "$confirm" in
+            [Yy]* )
+                success "Configuration confirmed"
+                return 0
+                ;;
+            [Nn]* )
+                error "Configuration rejected"
+                info "Installation aborted by user"
+                exit 0
+                ;;
+            * )
+                error "Invalid choice. Please enter y or n."
+                ;;
+        esac
+    done
+}
 generate_config() { :; }
 install_system() { :; }
 activate_service() { :; }
