@@ -20,17 +20,16 @@ USE_EXISTING_CONFIG=false
 CONFIG_ACTIVE_DAYS=""
 CONFIG_FIRST_PING=""
 CONFIG_NUM_PINGS=""
+INSTALL_COMPLETE=false
 
 # Trap for cleanup on error
-trap 'cleanup_on_error' ERR
+trap 'cleanup_on_error' EXIT
 
 cleanup_on_error() {
-    local exit_code=$?
-    if [ $exit_code -ne 0 ]; then
+    if [ "$INSTALL_COMPLETE" = false ] && [ $? -ne 0 ]; then
         echo -e "${RED}Installation failed!${NC}"
         echo "Check logs above for details"
     fi
-    exit $exit_code
 }
 
 error() {
@@ -153,6 +152,7 @@ main() {
     install_system
     activate_service
     show_success
+    INSTALL_COMPLETE=true
 }
 
 # Placeholder functions (will be implemented in next tasks)
@@ -431,7 +431,83 @@ install_system() {
     systemctl daemon-reload
     success "Systemd files installed"
 }
-activate_service() { :; }
-show_success() { :; }
+activate_service() {
+    info ""
+    info "======================================"
+    info "  Activating Service"
+    info "======================================"
+
+    # Enable timer to start on boot
+    info "Enabling systemd timer..."
+    systemctl enable claude-reset-scheduler.timer
+    success "Timer enabled"
+
+    # Start timer immediately
+    info "Starting systemd timer..."
+    systemctl start claude-reset-scheduler.timer
+    success "Timer started"
+
+    # Verify timer is active
+    if systemctl is-active --quiet claude-reset-scheduler.timer; then
+        success "Timer is active"
+    else
+        error "Timer failed to start"
+        echo "Check status with: systemctl status claude-reset-scheduler.timer"
+        exit 1
+    fi
+}
+show_success() {
+    local config_file="$CONFIG_DIR/config.yaml"
+
+    # Read config values for display
+    local active_days log_file
+    if [ -f "$config_file" ]; then
+        active_days=$(grep "active_days:" "$config_file" | cut -d':' -f2 | tr -d ' []')
+        log_file=$(grep "log_file:" "$config_file" | cut -d':' -f2 | tr -d ' "')
+    fi
+
+    # Convert days to names
+    local day_names=()
+    IFS=',' read -ra days <<< "$active_days"
+    for day in "${days[@]}"; do
+        day_names+=("$(day_name "$day")")
+    done
+
+    # Calculate ping times for display
+    local ping_times
+    if [ "$USE_EXISTING_CONFIG" = false ]; then
+        ping_times=($(calculate_ping_times_bash "$CONFIG_FIRST_PING" "$CONFIG_NUM_PINGS"))
+    fi
+
+    # Get next run time
+    local next_run=$(systemctl list-timers --no-pager | grep claude-reset-scheduler | awk '{print $1, $2, $3}')
+
+    info ""
+    echo -e "${GREEN}======================================"
+    echo -e "  Installation Complete!"
+    echo -e "======================================${NC}"
+    info ""
+    info "Configuration:"
+    info "  Active days: ${day_names[*]}"
+    if [ ${#ping_times[@]} -gt 0 ]; then
+        info "  Ping times: ${ping_times[*]}"
+    fi
+    info "  Config: $config_file"
+    info "  Logs: $log_file"
+    info ""
+    info "Service status:"
+    info "  Timer: active (runs every 15 minutes)"
+    if [ -n "$next_run" ]; then
+        info "  Next run: $next_run"
+    fi
+    info ""
+    info "Useful commands:"
+    info "  Check timer status:  systemctl status claude-reset-scheduler.timer"
+    info "  View logs:           journalctl -u claude-reset-scheduler.service -f"
+    info "  Stop scheduler:      systemctl stop claude-reset-scheduler.timer"
+    info "  Restart scheduler:   systemctl restart claude-reset-scheduler.timer"
+    info "  Reconfigure:         sudo ./install.sh"
+    info ""
+}
 
 main
