@@ -28,7 +28,6 @@ from pinger import send_ping
 def valid_config_dict():
     return {
         "work_start_time": "09:00",
-        "work_end_time": "17:00",
         "active_days": [0, 1, 2, 3, 4],
         "log_level": "INFO",
         "log_file": "~/.local/share/claude-reset-scheduler/test-scheduler.log",
