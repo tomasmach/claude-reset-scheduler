@@ -1,0 +1,14 @@
+[Unit]
+Description=Claude Reset Scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/Users/tomasmach/Documents/Code/claude-reset-scheduler/.venv/bin/python -m claude_reset_scheduler run --config ~/.config/claude-reset-scheduler/config.yaml
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=claude-reset-scheduler
+
+[Install]
+WantedBy=multi-user.target
