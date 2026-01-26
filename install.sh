@@ -318,7 +318,46 @@ interactive_config() {
         esac
     done
 }
-generate_config() { :; }
+generate_config() {
+    if [ "$USE_EXISTING_CONFIG" = true ]; then
+        info "Using existing configuration"
+        return 0
+    fi
+
+    local config_file="$CONFIG_DIR/config.yaml"
+
+    info "Generating configuration file..."
+
+    # Create config directory
+    mkdir -p "$CONFIG_DIR"
+
+    # Convert days array to YAML format
+    local days_yaml="["
+    IFS=',' read -ra days <<< "$CONFIG_ACTIVE_DAYS"
+    for i in "${!days[@]}"; do
+        if [ $i -gt 0 ]; then
+            days_yaml+=", "
+        fi
+        days_yaml+="${days[$i]}"
+    done
+    days_yaml+="]"
+
+    # Generate config.yaml
+    cat > "$config_file" << EOF
+work_start_time: "$CONFIG_FIRST_PING"
+active_days: $days_yaml
+log_level: "INFO"
+log_file: "$LOG_DIR/scheduler.log"
+ping_message: "ping"
+ping_timeout: 30
+EOF
+
+    # Set permissions
+    chown root:$SERVICE_USER "$config_file" 2>/dev/null || true
+    chmod 640 "$config_file"
+
+    success "Configuration file created at $config_file"
+}
 install_system() { :; }
 activate_service() { :; }
 show_success() { :; }
