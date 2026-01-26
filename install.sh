@@ -16,13 +16,15 @@ STATE_DIR="/var/lib/claude-reset-scheduler"
 SERVICE_USER="claude-reset-scheduler"
 
 # Trap for cleanup on error
-trap 'cleanup_on_error' EXIT
+trap 'cleanup_on_error' ERR
 
 cleanup_on_error() {
-    if [ $? -ne 0 ]; then
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
         echo -e "${RED}Installation failed!${NC}"
         echo "Check logs above for details"
     fi
+    exit $exit_code
 }
 
 error() {
