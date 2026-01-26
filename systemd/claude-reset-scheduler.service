@@ -1,0 +1,14 @@
+[Unit]
+Description=Claude Reset Scheduler
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3.13 -m claude_reset_scheduler run
+User=claude-reset-scheduler
+Group=claude-reset-scheduler
+WorkingDirectory=/opt/claude-reset-scheduler
+Environment=PATH=/opt/claude-reset-scheduler/.venv/bin:/usr/bin:/bin
+Environment=CLAUDE_RESET_SCHEDULER_CONFIG=/etc/claude-reset-scheduler/config.yaml
+StandardOutput=journal
+StandardError=journal

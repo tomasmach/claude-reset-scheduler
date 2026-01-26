@@ -1,0 +1,6 @@
+work_start_time: "09:00"
+active_days: [0, 1, 2, 3, 4]
+log_level: "INFO"
+log_file: "~/.local/share/claude-reset-scheduler/scheduler.log"
+ping_message: "ping"
+ping_timeout: 30

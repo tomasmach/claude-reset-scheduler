@@ -1,0 +1,10 @@
+[Unit]
+Description=Claude Reset Scheduler Timer
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
