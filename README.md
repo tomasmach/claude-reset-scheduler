@@ -8,7 +8,59 @@ Claude Code has a 5-hour rolling token limit. This scheduler automatically sends
 
 By scheduling pings throughout your workday, the 5-hour reset window aligns with your active development hours, preventing mid-day token exhaustion.
 
-## Installation
+## System-Wide Installation (Recommended)
+
+For production use, install as a system service:
+
+### Prerequisites
+
+- Ubuntu/Debian: `sudo apt install rsync`
+- Fedora/RHEL: `sudo dnf install rsync`
+- Arch: `sudo pacman -S rsync`
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/claude-reset-scheduler.git
+cd claude-reset-scheduler
+
+# Run interactive installer
+sudo ./install.sh
+```
+
+The installer will:
+1. Guide you through configuration (days, times, frequency)
+2. Create a dedicated system user
+3. Install to `/opt/claude-reset-scheduler`
+4. Set up systemd service and timer
+5. Start the scheduler automatically
+
+### Post-Installation
+
+Check status:
+```bash
+systemctl status claude-reset-scheduler.timer
+```
+
+View logs:
+```bash
+journalctl -u claude-reset-scheduler.service -f
+```
+
+Reconfigure:
+```bash
+sudo ./install.sh
+```
+
+Uninstall:
+```bash
+sudo ./uninstall.sh
+```
+
+## Manual Installation
+
+For development or testing, you can install locally:
 
 ### Using UV (Recommended)
 
@@ -36,6 +88,14 @@ pip install pydantic pyyaml pytest
 ```
 
 ## Configuration
+
+### System Installation
+
+Configuration is created automatically by `install.sh` at `/etc/claude-reset-scheduler/config.yaml`.
+
+To reconfigure, run: `sudo ./install.sh`
+
+### Manual Installation
 
 Create a `config.yaml` file at `~/.config/claude-reset-scheduler/config.yaml`:
 

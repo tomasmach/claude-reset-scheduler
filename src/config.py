@@ -49,7 +49,6 @@ def validate_safe_path(path: Path) -> None:
 
 class Config(BaseModel):
     work_start_time: str = Field(default="09:00")
-    work_end_time: str = Field(default="17:00")
     active_days: list[int] = Field(default=[0, 1, 2, 3, 4])
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = Field(
         default="INFO"
@@ -58,7 +57,7 @@ class Config(BaseModel):
     ping_message: str = Field(default="ping")
     ping_timeout: int = Field(default=30)
 
-    @field_validator("work_start_time", "work_end_time")
+    @field_validator("work_start_time")
     @classmethod
     def validate_work_time(cls, v: str) -> str:
         if len(v) != 5 or v[2] != ":":
@@ -73,18 +72,6 @@ class Config(BaseModel):
                 raise ValueError("minutes must be between 0 and 59")
         except ValueError:
             raise ValueError("work time must be in HH:MM format")
-        return v
-
-    @field_validator("work_end_time")
-    @classmethod
-    def validate_work_times_order(cls, v: str, info: ValidationInfo) -> str:
-        if "work_start_time" in info.data:
-            start_hour, start_minute = map(int, info.data["work_start_time"].split(":"))
-            end_hour, end_minute = map(int, v.split(":"))
-            start_minutes = start_hour * 60 + start_minute
-            end_minutes = end_hour * 60 + end_minute
-            if start_minutes >= end_minutes:
-                raise ValueError("work_start_time must be before work_end_time")
         return v
 
     @field_validator("active_days")
