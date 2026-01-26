@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from .config import Config
-from .pinger import send_ping
+from config import Config
+from pinger import send_ping
 
 STATE_DIR = Path("~/.local/state/claude-reset-scheduler").expanduser()
 STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)

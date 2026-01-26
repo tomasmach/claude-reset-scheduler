@@ -11,8 +11,8 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from claude_reset_scheduler.config import Config
-from claude_reset_scheduler.scheduler import (
+from config import Config
+from scheduler import (
     calculate_ping_times,
     should_run_today,
     is_time_to_ping,
@@ -21,7 +21,7 @@ from claude_reset_scheduler.scheduler import (
     should_rate_limit,
     run_once,
 )
-from claude_reset_scheduler.pinger import send_ping
+from pinger import send_ping
 
 
 @pytest.fixture
@@ -221,13 +221,13 @@ class TestCalculatePingTimes:
 
 
 class TestShouldRunToday:
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_monday(self, mock_datetime, temp_config_file):
         config = Config.from_yaml(temp_config_file)
         mock_datetime.now.return_value.weekday.return_value = 0
         assert should_run_today(config) is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_saturday(self, mock_datetime, temp_config_file):
         config = Config.from_yaml(temp_config_file)
         mock_datetime.now.return_value.weekday.return_value = 5
@@ -251,7 +251,7 @@ class TestShouldRunToday:
 
             config = Config.from_yaml(str(config_path))
 
-            with patch("claude_reset_scheduler.scheduler.datetime") as mock_datetime:
+            with patch("scheduler.datetime") as mock_datetime:
                 mock_datetime.now.return_value.weekday.return_value = 5
                 assert should_run_today(config) is True
 
@@ -264,43 +264,43 @@ class TestShouldRunToday:
 
 
 class TestIsTimeToPing:
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_exact_time(self, mock_datetime):
         mock_datetime.now.return_value.hour = 9
         mock_datetime.now.return_value.minute = 30
         assert is_time_to_ping("09:30") is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_within_window(self, mock_datetime):
         mock_datetime.now.return_value.hour = 9
         mock_datetime.now.return_value.minute = 35
         assert is_time_to_ping("09:30") is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_outside_window(self, mock_datetime):
         mock_datetime.now.return_value.hour = 9
         mock_datetime.now.return_value.minute = 46
         assert is_time_to_ping("09:30") is False
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_midnight_crossing(self, mock_datetime):
         mock_datetime.now.return_value.hour = 0
         mock_datetime.now.return_value.minute = 5
         assert is_time_to_ping("23:55") is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_edge_case_exactly_15_minutes(self, mock_datetime):
         mock_datetime.now.return_value.hour = 9
         mock_datetime.now.return_value.minute = 45
         assert is_time_to_ping("09:30") is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_midnight_crossing_reverse(self, mock_datetime):
         mock_datetime.now.return_value.hour = 23
         mock_datetime.now.return_value.minute = 55
         assert is_time_to_ping("00:05") is True
 
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.datetime")
     def test_midnight_crossing_outside_window(self, mock_datetime):
         mock_datetime.now.return_value.hour = 0
         mock_datetime.now.return_value.minute = 21
@@ -308,14 +308,14 @@ class TestIsTimeToPing:
 
 
 class TestPingTracking:
-    @patch("claude_reset_scheduler.scheduler.LAST_PINGS_FILE")
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.LAST_PINGS_FILE")
+    @patch("scheduler.datetime")
     def test_was_ping_sent_today_no_file(self, mock_datetime, mock_file):
         mock_file.exists.return_value = False
         assert was_ping_sent_today("09:00") is False
 
-    @patch("claude_reset_scheduler.scheduler.LAST_PINGS_FILE")
-    @patch("claude_reset_scheduler.scheduler.datetime")
+    @patch("scheduler.LAST_PINGS_FILE")
+    @patch("scheduler.datetime")
     def test_was_ping_sent_today_with_file(self, mock_datetime, mock_file, tmp_path):
         mock_file.exists.return_value = True
         today = "2026-01-27"
@@ -340,7 +340,7 @@ class TestPingTracking:
                 assert was_ping_sent_today("09:00") is True
 
     def test_mark_ping_sent_today_new_entry(self, tmp_path):
-        from claude_reset_scheduler.scheduler import LAST_PINGS_FILE, mark_ping_sent_today, _cleanup_old_records
+        from scheduler import LAST_PINGS_FILE, mark_ping_sent_today, _cleanup_old_records
         import shutil
 
         test_file = tmp_path / "last_pings.json"
@@ -354,14 +354,14 @@ class TestPingTracking:
             test_file.parent.mkdir(parents=True, exist_ok=True)
 
             with patch.object(
-                sys.modules["claude_reset_scheduler.scheduler"], "LAST_PINGS_FILE", test_file
+                sys.modules["scheduler"], "LAST_PINGS_FILE", test_file
             ):
                 with patch.object(
-                    sys.modules["claude_reset_scheduler.scheduler"], "STATE_DIR", tmp_path
+                    sys.modules["scheduler"], "STATE_DIR", tmp_path
                 ):
-                    with patch("claude_reset_scheduler.scheduler.datetime") as mock_datetime:
+                    with patch("scheduler.datetime") as mock_datetime:
                         mock_datetime.now.return_value.strftime.return_value = "2026-01-27"
-                        with patch("claude_reset_scheduler.scheduler._cleanup_old_records", side_effect=no_op_cleanup):
+                        with patch("scheduler._cleanup_old_records", side_effect=no_op_cleanup):
                             mark_ping_sent_today("09:00")
 
             with open(test_file, "r") as f:
@@ -374,7 +374,7 @@ class TestPingTracking:
 
 class TestRateLimiting:
     def test_should_rate_limit_recent_ping(self, tmp_path):
-        from claude_reset_scheduler.scheduler import LAST_PINGS_FILE, should_rate_limit
+        from scheduler import LAST_PINGS_FILE, should_rate_limit
 
         now = datetime(2026, 1, 27, 10, 30, 0)
 
@@ -399,13 +399,13 @@ class TestRateLimiting:
                 return original_datetime.strptime(date_string, format_string)
 
         with patch.object(
-            sys.modules["claude_reset_scheduler.scheduler"], "LAST_PINGS_FILE", test_file
+            sys.modules["scheduler"], "LAST_PINGS_FILE", test_file
         ):
-            with patch("claude_reset_scheduler.scheduler.datetime", MockDatetime):
+            with patch("scheduler.datetime", MockDatetime):
                 assert should_rate_limit() is True
 
     def test_should_rate_limit_old_ping(self, tmp_path):
-        from claude_reset_scheduler.scheduler import LAST_PINGS_FILE, should_rate_limit
+        from scheduler import LAST_PINGS_FILE, should_rate_limit
 
         now = datetime(2026, 1, 27, 10, 30, 0)
 
@@ -430,14 +430,14 @@ class TestRateLimiting:
                 return original_datetime.strptime(date_string, format_string)
 
         with patch.object(
-            sys.modules["claude_reset_scheduler.scheduler"], "LAST_PINGS_FILE", test_file
+            sys.modules["scheduler"], "LAST_PINGS_FILE", test_file
         ):
-            with patch("claude_reset_scheduler.scheduler.datetime", MockDatetime):
+            with patch("scheduler.datetime", MockDatetime):
                 assert should_rate_limit() is False
 
 
 class TestPinger:
-    @patch("claude_reset_scheduler.pinger.subprocess.run")
+    @patch("pinger.subprocess.run")
     def test_send_ping_success(self, mock_run):
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -447,7 +447,7 @@ class TestPinger:
         result = send_ping("ping", 30)
         assert result is True
 
-    @patch("claude_reset_scheduler.pinger.subprocess.run")
+    @patch("pinger.subprocess.run")
     def test_send_ping_failure(self, mock_run):
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -457,14 +457,14 @@ class TestPinger:
         result = send_ping("ping", 30)
         assert result is False
 
-    @patch("claude_reset_scheduler.pinger.subprocess.run")
+    @patch("pinger.subprocess.run")
     def test_send_ping_timeout(self, mock_run):
         mock_run.side_effect = subprocess.TimeoutExpired("claude-code", 30)
 
         result = send_ping("ping", 30)
         assert result is False
 
-    @patch("claude_reset_scheduler.pinger.subprocess.run")
+    @patch("pinger.subprocess.run")
     def test_send_ping_not_found(self, mock_run):
         mock_run.side_effect = FileNotFoundError()
 
@@ -491,7 +491,7 @@ class TestNegativeWorkday:
 class TestFileLocking:
     def test_concurrent_writes_no_data_corruption(self, tmp_path):
         import threading
-        import claude_reset_scheduler.scheduler as scheduler_module
+        import scheduler as scheduler_module
 
         test_file = tmp_path / "last_pings.json"
         test_file.parent.mkdir(parents=True, exist_ok=True)
@@ -506,9 +506,9 @@ class TestFileLocking:
             def no_op_cleanup(data):
                 return data
 
-            with patch("claude_reset_scheduler.scheduler.datetime") as mock_datetime:
+            with patch("scheduler.datetime") as mock_datetime:
                 mock_datetime.now.return_value.strftime.return_value = "2026-01-27"
-                with patch("claude_reset_scheduler.scheduler._cleanup_old_records", side_effect=no_op_cleanup):
+                with patch("scheduler._cleanup_old_records", side_effect=no_op_cleanup):
                     threads = []
                     for i in range(10):
                         t = threading.Thread(
@@ -534,7 +534,7 @@ class TestFileLocking:
 
 class TestCleanup:
     def test_old_entries_removed_after_7_days(self, tmp_path):
-        from claude_reset_scheduler.scheduler import LAST_PINGS_FILE, _cleanup_old_records
+        from scheduler import LAST_PINGS_FILE, _cleanup_old_records
 
         test_file = tmp_path / "last_pings.json"
         test_file.parent.mkdir(parents=True, exist_ok=True)
@@ -550,7 +550,7 @@ class TestCleanup:
             today: {"11:00": True},
         }
 
-        with patch("claude_reset_scheduler.scheduler.datetime") as mock_datetime:
+        with patch("scheduler.datetime") as mock_datetime:
             mock_datetime.now.return_value = now
             cleaned_data = _cleanup_old_records(data)
 
@@ -744,8 +744,8 @@ class TestTimeoutValidation:
 
 
 class TestRunOnce:
-    @patch("claude_reset_scheduler.scheduler.should_run_today")
-    @patch("claude_reset_scheduler.scheduler.calculate_ping_times")
+    @patch("scheduler.should_run_today")
+    @patch("scheduler.calculate_ping_times")
     def test_run_once_inactive_day(self, mock_calc_times, mock_should_run, temp_config_file):
         config = Config.from_yaml(temp_config_file)
         mock_should_run.return_value = False
@@ -754,13 +754,13 @@ class TestRunOnce:
         assert result is False
         mock_calc_times.assert_not_called()
 
-    @patch("claude_reset_scheduler.scheduler.mark_ping_sent_today")
-    @patch("claude_reset_scheduler.scheduler.should_run_today")
-    @patch("claude_reset_scheduler.scheduler.calculate_ping_times")
-    @patch("claude_reset_scheduler.scheduler.is_time_to_ping")
-    @patch("claude_reset_scheduler.scheduler.was_ping_sent_today")
-    @patch("claude_reset_scheduler.scheduler.should_rate_limit")
-    @patch("claude_reset_scheduler.scheduler.send_ping")
+    @patch("scheduler.mark_ping_sent_today")
+    @patch("scheduler.should_run_today")
+    @patch("scheduler.calculate_ping_times")
+    @patch("scheduler.is_time_to_ping")
+    @patch("scheduler.was_ping_sent_today")
+    @patch("scheduler.should_rate_limit")
+    @patch("scheduler.send_ping")
     def test_run_once_success(
         self,
         mock_send_ping,
@@ -785,11 +785,11 @@ class TestRunOnce:
         mock_send_ping.assert_called_once()
         mock_mark_sent.assert_called_once()
 
-    @patch("claude_reset_scheduler.scheduler.should_run_today")
-    @patch("claude_reset_scheduler.scheduler.calculate_ping_times")
-    @patch("claude_reset_scheduler.scheduler.is_time_to_ping")
-    @patch("claude_reset_scheduler.scheduler.was_ping_sent_today")
-    @patch("claude_reset_scheduler.scheduler.should_rate_limit")
+    @patch("scheduler.should_run_today")
+    @patch("scheduler.calculate_ping_times")
+    @patch("scheduler.is_time_to_ping")
+    @patch("scheduler.was_ping_sent_today")
+    @patch("scheduler.should_rate_limit")
     def test_run_once_rate_limited(
         self,
         mock_rate_limit,
@@ -809,9 +809,9 @@ class TestRunOnce:
         result = run_once(config)
         assert result is False
 
-    @patch("claude_reset_scheduler.scheduler.should_run_today")
-    @patch("claude_reset_scheduler.scheduler.calculate_ping_times")
-    @patch("claude_reset_scheduler.scheduler.is_time_to_ping")
+    @patch("scheduler.should_run_today")
+    @patch("scheduler.calculate_ping_times")
+    @patch("scheduler.is_time_to_ping")
     def test_run_once_not_time_yet(
         self,
         mock_is_time,

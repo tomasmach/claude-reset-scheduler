@@ -3,9 +3,9 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from .config import Config
-from .logger import setup_logging
-from .scheduler import (
+from config import Config
+from logger import setup_logging
+from scheduler import (
     calculate_ping_times,
     is_time_to_ping,
     run_once,
@@ -94,7 +94,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart={python_path} -m claude_reset_scheduler run --config {config_path}
+ExecStart=claude-reset-scheduler run --config {config_path}
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=claude-reset-scheduler

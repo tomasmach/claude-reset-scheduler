@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 
-from .config import Config
+from config import Config
 
 
 def setup_logging(config: Config) -> logging.Logger:

@@ -31,17 +31,17 @@ dev = [
 ]
 
 [project.scripts]
-claude-reset-scheduler = "claude_reset_scheduler.__main__:main"
+claude-reset-scheduler = "cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+py-modules = ["cli", "config", "logger", "pinger", "scheduler"]
 
-[tool.setuptools.package-data]
-claude_reset_scheduler = ["config.example.yaml"]
+[tool.setuptools.package-dir]
+"" = "src"
 
 [tool.ruff]
 line-length = 100
