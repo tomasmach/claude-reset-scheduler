@@ -85,11 +85,11 @@ validate_time() {
     local minute="${input##*:}"
 
     # Validate ranges
-    if [ "$hour" -lt 0 ] || [ "$hour" -gt 23 ]; then
+    if [ "$((10#$hour))" -lt 0 ] || [ "$((10#$hour))" -gt 23 ]; then
         return 1
     fi
 
-    if [ "$minute" -lt 0 ] || [ "$minute" -gt 59 ]; then
+    if [ "$((10#$minute))" -lt 0 ] || [ "$((10#$minute))" -gt 59 ]; then
         return 1
     fi
 
