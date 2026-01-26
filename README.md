@@ -53,6 +53,11 @@ Reconfigure:
 sudo ./install.sh
 ```
 
+Uninstall:
+```bash
+sudo ./uninstall.sh
+```
+
 ## Manual Installation
 
 For development or testing, you can install locally:
