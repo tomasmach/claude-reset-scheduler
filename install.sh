@@ -104,8 +104,8 @@ validate_pings() {
         return 1
     fi
 
-    # Check range 1-5
-    if [ "$input" -lt 1 ] || [ "$input" -gt 5 ]; then
+    # Check range 1-10
+    if [ "$input" -lt 1 ] || [ "$input" -gt 10 ]; then
         return 1
     fi
 
@@ -262,7 +262,7 @@ interactive_config() {
 
     # Prompt for number of pings
     while true; do
-        info "How many pings per day? (1-5)"
+        info "How many pings per day? (1-10)"
         info "  Pings occur every 5 hours starting from first ping time"
         read -p "Number of pings: " pings_input
         pings_input="${pings_input:-3}"
@@ -272,7 +272,7 @@ interactive_config() {
             success "Number validated: $CONFIG_NUM_PINGS"
             break
         else
-            error "Invalid number. Enter a number between 1 and 5"
+            error "Invalid number. Enter a number between 1 and 10"
         fi
     done
 
