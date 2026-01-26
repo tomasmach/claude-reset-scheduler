@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3.13 -m claude_reset_scheduler run
+ExecStart=/opt/claude-reset-scheduler/.venv/bin/python3 -m claude_reset_scheduler run
 User=claude-reset-scheduler
 Group=claude-reset-scheduler
 WorkingDirectory=/opt/claude-reset-scheduler
