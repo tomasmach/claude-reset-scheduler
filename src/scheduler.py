@@ -18,18 +18,24 @@ STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
 LAST_PINGS_FILE = STATE_DIR / "last_pings.json"
 
 
-def calculate_ping_times(config: Config) -> list[str]:
+def calculate_ping_times(config: Config, num_pings: int = 3) -> list[str]:
+    """Calculate ping times based on start time and number of pings.
+
+    Args:
+        config: Configuration containing work_start_time
+        num_pings: Number of pings per day (default 3)
+
+    Returns:
+        List of time strings in HH:MM format, spaced 5 hours apart
+    """
     start_hour, start_minute = map(int, config.work_start_time.split(":"))
     start_time_minutes = start_hour * 60 + start_minute
-
-    end_hour, end_minute = map(int, config.work_end_time.split(":"))
-    end_time_minutes = end_hour * 60 + end_minute
 
     ping_interval_minutes = 5 * 60  # 5 hours
 
     times = []
     current_time_minutes = start_time_minutes
-    while current_time_minutes <= end_time_minutes:
+    for _ in range(num_pings):
         hour = current_time_minutes // 60
         minute = current_time_minutes % 60
         times.append(f"{hour:02d}:{minute:02d}")
