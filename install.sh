@@ -118,7 +118,7 @@ calculate_ping_times_bash() {
     local current_minutes=$start_minutes
 
     for ((i=0; i<num_pings; i++)); do
-        local h=$((current_minutes / 60))
+        local h=$(( (current_minutes / 60) % 24 ))
         local m=$((current_minutes % 60))
         times+=("$(printf "%02d:%02d" $h $m)")
         current_minutes=$((current_minutes + 300))  # 5 hours = 300 minutes
