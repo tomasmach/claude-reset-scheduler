@@ -358,7 +358,79 @@ EOF
 
     success "Configuration file created at $config_file"
 }
-install_system() { :; }
+install_system() {
+    info ""
+    info "======================================"
+    info "  Installing System Components"
+    info "======================================"
+
+    # Create system user
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        info "Creating system user $SERVICE_USER..."
+        useradd --system --no-create-home --shell /usr/sbin/nologin "$SERVICE_USER"
+        success "System user created"
+    else
+        success "System user already exists"
+    fi
+
+    # Install to /opt
+    info "Installing to $INSTALL_DIR..."
+    mkdir -p "$INSTALL_DIR"
+
+    # Get the directory where install.sh is located
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # Copy project files (exclude .git, .venv, __pycache__)
+    rsync -av --exclude='.git' --exclude='.venv' --exclude='__pycache__' \
+        --exclude='*.pyc' --exclude='.pytest_cache' \
+        "$script_dir/" "$INSTALL_DIR/"
+
+    chown -R root:root "$INSTALL_DIR"
+    success "Project files installed"
+
+    # Check and install UV
+    if ! command -v uv &> /dev/null; then
+        info "Installing UV package manager..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+        success "UV installed"
+    else
+        success "UV already installed"
+    fi
+
+    # Create virtual environment
+    info "Creating virtual environment..."
+    cd "$INSTALL_DIR"
+    uv venv
+    uv pip install pydantic pyyaml pytest
+    success "Virtual environment created"
+
+    # Create runtime directories
+    info "Creating runtime directories..."
+    mkdir -p "$LOG_DIR"
+    mkdir -p "$STATE_DIR"
+    chown "$SERVICE_USER:$SERVICE_USER" "$LOG_DIR"
+    chown "$SERVICE_USER:$SERVICE_USER" "$STATE_DIR"
+    chmod 755 "$LOG_DIR"
+    chmod 755 "$STATE_DIR"
+    success "Runtime directories created"
+
+    # Install systemd files
+    info "Installing systemd service files..."
+    local python_path="$INSTALL_DIR/.venv/bin/python3"
+
+    # Update service file with correct paths
+    sed -e "s|ExecStart=.*|ExecStart=$python_path -m claude_reset_scheduler run|" \
+        -e "s|WorkingDirectory=.*|WorkingDirectory=$INSTALL_DIR|" \
+        -e "s|Environment=PATH=.*|Environment=PATH=$INSTALL_DIR/.venv/bin:/usr/bin:/bin|" \
+        -e "s|Environment=CLAUDE_RESET_SCHEDULER_CONFIG=.*|Environment=CLAUDE_RESET_SCHEDULER_CONFIG=$CONFIG_DIR/config.yaml|" \
+        "$INSTALL_DIR/systemd/claude-reset-scheduler.service" > /etc/systemd/system/claude-reset-scheduler.service
+
+    cp "$INSTALL_DIR/systemd/claude-reset-scheduler.timer" /etc/systemd/system/
+
+    systemctl daemon-reload
+    success "Systemd files installed"
+}
 activate_service() { :; }
 show_success() { :; }
 
