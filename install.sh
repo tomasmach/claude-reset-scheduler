@@ -15,6 +15,9 @@ LOG_DIR="/var/log/claude-reset-scheduler"
 STATE_DIR="/var/lib/claude-reset-scheduler"
 SERVICE_USER="claude-reset-scheduler"
 
+# Global state
+USE_EXISTING_CONFIG=false
+
 # Trap for cleanup on error
 trap 'cleanup_on_error' ERR
 
@@ -150,8 +153,57 @@ main() {
 }
 
 # Placeholder functions (will be implemented in next tasks)
-check_sudo() { :; }
-check_existing_config() { :; }
+check_sudo() {
+    if [ "$EUID" -ne 0 ]; then
+        error "This script must be run with sudo"
+        echo "Usage: sudo ./install.sh"
+        exit 1
+    fi
+
+    # Check for rsync
+    if ! command -v rsync &> /dev/null; then
+        error "rsync is required but not installed"
+        echo "Install it with: sudo apt install rsync  # or equivalent for your OS"
+        exit 1
+    fi
+
+    success "Running as root"
+}
+
+check_existing_config() {
+    local config_file="$CONFIG_DIR/config.yaml"
+
+    if [ ! -f "$config_file" ]; then
+        USE_EXISTING_CONFIG=false
+        return 0
+    fi
+
+    info ""
+    info "Existing configuration found at $config_file"
+
+    while true; do
+        read -p "$(echo -e "${YELLOW}(U)se existing, (R)econfigure, or (A)bort?${NC} ")" choice
+        case "$choice" in
+            [Uu]* )
+                USE_EXISTING_CONFIG=true
+                success "Using existing configuration"
+                return 0
+                ;;
+            [Rr]* )
+                USE_EXISTING_CONFIG=false
+                warning "Will reconfigure"
+                return 0
+                ;;
+            [Aa]* )
+                info "Installation aborted by user"
+                exit 0
+                ;;
+            * )
+                error "Invalid choice. Please enter U, R, or A."
+                ;;
+        esac
+    done
+}
 interactive_config() { :; }
 generate_config() { :; }
 install_system() { :; }
