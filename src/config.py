@@ -16,16 +16,35 @@ def validate_safe_path(path: Path) -> None:
     Raises:
         ValueError: If path is not safe or outside home directory
     """
-    if path.is_symlink():
-        raise ValueError(f"Symlinks are not allowed: {path}")
+    # Resolve the path first to avoid TOCTOU vulnerability
+    try:
+        resolved_path = path.resolve(strict=True)
+    except (FileNotFoundError, RuntimeError):
+        # Path doesn't exist yet, resolve without strict mode for validation
+        resolved_path = path.resolve()
 
-    resolved_path = path.resolve()
+    # Validate the resolved path is within home directory first
     home_dir = Path.home().resolve()
 
     try:
         resolved_path.relative_to(home_dir)
-    except ValueError:
-        raise ValueError(f"Path must be within home directory: {path}")
+    except ValueError as e:
+        raise ValueError(f"Path must be within home directory: {path}") from e
+
+    # Check for symlink components in the original path and its parents
+    # Only check paths within the home directory boundary
+    current_path = path.absolute()
+    while current_path != current_path.parent:
+        # Stop checking when we reach or go above the home directory
+        try:
+            current_path.relative_to(home_dir)
+        except ValueError:
+            # We've gone outside home directory, stop checking
+            break
+
+        if current_path.is_symlink():
+            raise ValueError(f"Symlinks are not allowed: {current_path}")
+        current_path = current_path.parent
 
 
 class Config(BaseModel):
