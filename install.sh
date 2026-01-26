@@ -26,7 +26,8 @@ INSTALL_COMPLETE=false
 trap 'cleanup_on_error' EXIT
 
 cleanup_on_error() {
-    if [ "$INSTALL_COMPLETE" = false ] && [ $? -ne 0 ]; then
+    local err=$?
+    if [ "$INSTALL_COMPLETE" = false ] && [ $err -ne 0 ]; then
         echo -e "${RED}Installation failed!${NC}"
         echo "Check logs above for details"
     fi
