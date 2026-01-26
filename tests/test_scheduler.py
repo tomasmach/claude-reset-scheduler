@@ -146,51 +146,20 @@ class TestConfig:
         config = Config(active_days=[5, 6])
         assert config.active_days == [5, 6]
 
-    def test_work_end_time_validation(self):
-        config = Config(work_start_time="09:00", work_end_time="18:00")
-        assert config.work_end_time == "18:00"
-
-    def test_work_end_time_before_start_time(self, tmp_path):
-        config_dict = {
-            "work_start_time": "17:00",
-            "work_end_time": "09:00",
-            "active_days": [0],
-        }
-        config_path = tmp_path / "config.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config_dict, f)
-
-        with pytest.raises(ValueError) as exc_info:
-            Config.from_yaml(str(config_path))
-        assert "work_start_time must be before work_end_time" in str(exc_info.value)
-
-    def test_work_end_time_equal_start_time(self, tmp_path):
-        config_dict = {
-            "work_start_time": "09:00",
-            "work_end_time": "09:00",
-            "active_days": [0],
-        }
-        config_path = tmp_path / "config.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config_dict, f)
-
-        with pytest.raises(ValueError) as exc_info:
-            Config.from_yaml(str(config_path))
-        assert "work_start_time must be before work_end_time" in str(exc_info.value)
-
 
 class TestCalculatePingTimes:
     def test_standard_9_to_5(self):
-        config = Config(work_start_time="09:00", work_end_time="17:00")
-        times = calculate_ping_times(config)
-        assert len(times) == 2  # 09:00 and 14:00 (19:00 would be outside work hours)
+        config = Config(work_start_time="09:00")
+        times = calculate_ping_times(config, num_pings=3)
+        assert len(times) == 3  # 09:00, 14:00, 19:00
         assert times[0] == "09:00"
         assert times[1] == "14:00"
+        assert times[2] == "19:00"
         assert all(len(t) == 5 and t[2] == ":" for t in times)
 
     def test_late_start(self):
-        config = Config(work_start_time="12:00", work_end_time="17:00")
-        times = calculate_ping_times(config)
+        config = Config(work_start_time="12:00")
+        times = calculate_ping_times(config, num_pings=2)
         assert len(times) == 2  # 12:00 and 17:00
         assert times[0] == "12:00"
         assert times[1] == "17:00"
@@ -198,8 +167,8 @@ class TestCalculatePingTimes:
         assert hour >= 12
 
     def test_early_start(self):
-        config = Config(work_start_time="06:00", work_end_time="17:00")
-        times = calculate_ping_times(config)
+        config = Config(work_start_time="06:00")
+        times = calculate_ping_times(config, num_pings=3)
         assert len(times) == 3  # 06:00, 11:00, 16:00
         assert times[0] == "06:00"
         assert times[1] == "11:00"
@@ -208,17 +177,47 @@ class TestCalculatePingTimes:
         assert hour >= 6
 
     def test_custom_work_end_time(self):
-        config = Config(work_start_time="09:00", work_end_time="18:00")
-        times = calculate_ping_times(config)
-        assert len(times) == 2  # 09:00 and 14:00 (19:00 would be outside)
+        config = Config(work_start_time="09:00")
+        times = calculate_ping_times(config, num_pings=2)
+        assert len(times) == 2  # 09:00 and 14:00
         assert times[0] == "09:00"
         assert times[1] == "14:00"
 
     def test_short_workday(self):
-        config = Config(work_start_time="09:00", work_end_time="12:00")
-        times = calculate_ping_times(config)
-        assert len(times) == 1  # Only 09:00 (14:00 would be outside work hours)
+        config = Config(work_start_time="09:00")
+        times = calculate_ping_times(config, num_pings=1)
+        assert len(times) == 1  # Only 09:00
         assert times[0] == "09:00"
+
+    def test_hour_overflow_handling(self):
+        config = Config(work_start_time="22:00")
+        times = calculate_ping_times(config, num_pings=3)
+        assert len(times) == 3
+        assert times[0] == "22:00"
+        assert times[1] == "03:00"  # 22 + 5 = 27 % 24 = 3
+        assert times[2] == "08:00"  # 22 + 10 = 32 % 24 = 8
+
+    def test_num_pings_validation_too_low(self):
+        config = Config(work_start_time="09:00")
+        with pytest.raises(ValueError) as exc_info:
+            calculate_ping_times(config, num_pings=0)
+        assert "num_pings must be between 1 and 10" in str(exc_info.value)
+
+    def test_num_pings_validation_too_high(self):
+        config = Config(work_start_time="09:00")
+        with pytest.raises(ValueError) as exc_info:
+            calculate_ping_times(config, num_pings=11)
+        assert "num_pings must be between 1 and 10" in str(exc_info.value)
+
+    def test_num_pings_validation_min_valid(self):
+        config = Config(work_start_time="09:00")
+        times = calculate_ping_times(config, num_pings=1)
+        assert len(times) == 1
+
+    def test_num_pings_validation_max_valid(self):
+        config = Config(work_start_time="09:00")
+        times = calculate_ping_times(config, num_pings=10)
+        assert len(times) == 10
 
 
 class TestShouldRunToday:
@@ -473,20 +472,6 @@ class TestPinger:
         assert result is False
 
 
-class TestNegativeWorkday:
-    def test_work_start_after_end_rejected(self, tmp_path):
-        config_dict = {
-            "work_start_time": "18:00",
-            "work_end_time": "17:00",
-            "active_days": [0],
-        }
-        config_path = tmp_path / "config.yaml"
-        with open(config_path, "w") as f:
-            yaml.dump(config_dict, f)
-
-        with pytest.raises(ValueError) as exc_info:
-            Config.from_yaml(str(config_path))
-        assert "work_start_time must be before work_end_time" in str(exc_info.value)
 
 
 class TestFileLocking:

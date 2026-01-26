@@ -28,6 +28,9 @@ def calculate_ping_times(config: Config, num_pings: int = 3) -> list[str]:
     Returns:
         List of time strings in HH:MM format, spaced 5 hours apart
     """
+    if num_pings < 1 or num_pings > 10:
+        raise ValueError("num_pings must be between 1 and 10")
+
     start_hour, start_minute = map(int, config.work_start_time.split(":"))
     start_time_minutes = start_hour * 60 + start_minute
 
@@ -36,7 +39,7 @@ def calculate_ping_times(config: Config, num_pings: int = 3) -> list[str]:
     times = []
     current_time_minutes = start_time_minutes
     for _ in range(num_pings):
-        hour = current_time_minutes // 60
+        hour = (current_time_minutes // 60) % 24
         minute = current_time_minutes % 60
         times.append(f"{hour:02d}:{minute:02d}")
         current_time_minutes += ping_interval_minutes
