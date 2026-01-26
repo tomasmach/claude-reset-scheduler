@@ -183,41 +183,42 @@ class TestCalculatePingTimes:
     def test_standard_9_to_5(self):
         config = Config(work_start_time="09:00", work_end_time="17:00")
         times = calculate_ping_times(config)
-        assert len(times) == 3
+        assert len(times) == 2  # 09:00 and 14:00 (19:00 would be outside work hours)
+        assert times[0] == "09:00"
+        assert times[1] == "14:00"
         assert all(len(t) == 5 and t[2] == ":" for t in times)
 
     def test_late_start(self):
         config = Config(work_start_time="12:00", work_end_time="17:00")
         times = calculate_ping_times(config)
-        assert len(times) == 3
+        assert len(times) == 2  # 12:00 and 17:00
+        assert times[0] == "12:00"
+        assert times[1] == "17:00"
         hour = int(times[0].split(":")[0])
         assert hour >= 12
 
     def test_early_start(self):
         config = Config(work_start_time="06:00", work_end_time="17:00")
         times = calculate_ping_times(config)
-        assert len(times) == 3
+        assert len(times) == 3  # 06:00, 11:00, 16:00
+        assert times[0] == "06:00"
+        assert times[1] == "11:00"
+        assert times[2] == "16:00"
         hour = int(times[0].split(":")[0])
         assert hour >= 6
 
     def test_custom_work_end_time(self):
         config = Config(work_start_time="09:00", work_end_time="18:00")
         times = calculate_ping_times(config)
-        assert len(times) == 3
-        start_minutes = 9 * 60
-        end_minutes = 18 * 60
-        interval = (end_minutes - start_minutes) // 3
+        assert len(times) == 2  # 09:00 and 14:00 (19:00 would be outside)
         assert times[0] == "09:00"
-        assert times[1] == f"{(start_minutes + interval) // 60:02d}:{(start_minutes + interval) % 60:02d}"
-        assert times[2] == f"{(start_minutes + 2 * interval) // 60:02d}:{(start_minutes + 2 * interval) % 60:02d}"
+        assert times[1] == "14:00"
 
     def test_short_workday(self):
         config = Config(work_start_time="09:00", work_end_time="12:00")
         times = calculate_ping_times(config)
-        assert len(times) == 3
+        assert len(times) == 1  # Only 09:00 (14:00 would be outside work hours)
         assert times[0] == "09:00"
-        assert times[1] == "10:00"
-        assert times[2] == "11:00"
 
 
 class TestShouldRunToday:
@@ -774,7 +775,7 @@ class TestRunOnce:
     ):
         config = Config.from_yaml(temp_config_file)
         mock_should_run.return_value = True
-        mock_calc_times.return_value = ["09:00", "13:00", "16:00"]
+        mock_calc_times.return_value = ["09:00", "14:00"]
         mock_is_time.return_value = True
         mock_was_sent.return_value = False
         mock_rate_limit.return_value = False
@@ -801,7 +802,7 @@ class TestRunOnce:
     ):
         config = Config.from_yaml(temp_config_file)
         mock_should_run.return_value = True
-        mock_calc_times.return_value = ["09:00", "13:00", "16:00"]
+        mock_calc_times.return_value = ["09:00", "14:00"]
         mock_is_time.return_value = True
         mock_was_sent.return_value = False
         mock_rate_limit.return_value = True
@@ -821,7 +822,7 @@ class TestRunOnce:
     ):
         config = Config.from_yaml(temp_config_file)
         mock_should_run.return_value = True
-        mock_calc_times.return_value = ["09:00", "13:00", "16:00"]
+        mock_calc_times.return_value = ["09:00", "14:00"]
         mock_is_time.return_value = False
 
         result = run_once(config)

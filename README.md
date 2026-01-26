@@ -117,8 +117,7 @@ Schedule based on config:
 
 Ping times:
   1. 09:00
-  2. 13:00
-  3. 16:00
+  2. 14:00
 
 Upcoming days:
   2026-01-27 (Monday): ACTIVE
@@ -141,11 +140,10 @@ Output:
 Running in test mode (dry-run)
 Work start time: 09:00
 Active days: 0, 1, 2, 3, 4
-Scheduled ping times: 09:00, 13:00, 16:00
+Scheduled ping times: 09:00, 14:00
 Current time: 14:30
   09:00: already sent
-  13:00: already sent
-  16:00: scheduled
+  14:00: already sent
 ```
 
 ### Run Scheduler
@@ -226,13 +224,13 @@ pytest --cov=src/claude_reset_scheduler tests/
 A: Claude Code's 5-hour rolling token limit can reset at inconvenient times. By strategically timing pings throughout your workday, you ensure the reset window aligns with your active development hours.
 
 **Q: How often are pings sent?**
-A: The scheduler calculates 3 ping times distributed across your workday (9am-5pm by default), at roughly 09:00, 13:00, and 16:00.
+A: The scheduler sends pings every 5 hours starting from your work start time, continuing throughout your workday. For example, with a 9am start: 09:00, 14:00, 19:00 (if still within work hours).
 
 **Q: Will this violate Claude's terms of service?**
 A: This tool is a gray area. It sends legitimate API calls but specifically to optimize token reset timing. Use responsibly and at your own risk.
 
-**Q: Can I change the number of pings per day?**
-A: Currently, the scheduler sends 3 pings per active day. This can be modified in the `calculate_ping_times` function in `src/claude_reset_scheduler/scheduler.py`.
+**Q: Can I change the ping interval?**
+A: The 5-hour interval aligns with Claude Code's token reset window. You can modify the interval in the `calculate_ping_times` function in `src/scheduler.py`, but 5 hours is optimal for token limit management.
 
 **Q: What happens if the ping fails?**
 A: The scheduler will retry up to 3 times with exponential backoff (5s, 10s, 20s). If all retries fail, it logs an error and waits for the next scheduled check.
