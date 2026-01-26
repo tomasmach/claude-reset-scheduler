@@ -228,6 +228,7 @@ interactive_config() {
         info "  4=Friday, 5=Saturday, 6=Sunday"
         info "  Example: 0,1,2,3,4 for weekdays"
         read -p "Active days: " days_input
+        days_input="${days_input:-0,1,2,3,4}"
 
         if validate_days "$days_input"; then
             CONFIG_ACTIVE_DAYS="${days_input// /}"
@@ -245,6 +246,7 @@ interactive_config() {
         info "What time should the first ping occur? (24-hour format)"
         info "  Example: 09:00 for 9 AM"
         read -p "First ping time: " time_input
+        time_input="${time_input:-09:00}"
 
         if validate_time "$time_input"; then
             CONFIG_FIRST_PING="$time_input"
@@ -262,6 +264,7 @@ interactive_config() {
         info "How many pings per day? (1-5)"
         info "  Pings occur every 5 hours starting from first ping time"
         read -p "Number of pings: " pings_input
+        pings_input="${pings_input:-3}"
 
         if validate_pings "$pings_input"; then
             CONFIG_NUM_PINGS="$pings_input"
