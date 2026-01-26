@@ -14,7 +14,7 @@ from .scheduler import (
 )
 
 
-def cmd_run(args) -> None:
+def cmd_run(args: argparse.Namespace) -> None:
     config = Config.load_default() if args.config is None else Config.from_yaml(args.config)
     logger = setup_logging(config)
 
@@ -23,7 +23,7 @@ def cmd_run(args) -> None:
     logger.info("Scheduler run complete")
 
 
-def cmd_test(args) -> None:
+def cmd_test(args: argparse.Namespace) -> None:
     config = Config.load_default() if args.config is None else Config.from_yaml(args.config)
     logger = setup_logging(config)
 
@@ -49,7 +49,7 @@ def cmd_test(args) -> None:
         logger.info(f"  {time_str}: {status}")
 
 
-def cmd_schedule(args) -> None:
+def cmd_schedule(args: argparse.Namespace) -> None:
     config = Config.load_default() if args.config is None else Config.from_yaml(args.config)
 
     today = datetime.now()
@@ -84,7 +84,7 @@ def cmd_schedule(args) -> None:
                 )
 
 
-def cmd_install(args) -> None:
+def cmd_install(args: argparse.Namespace) -> None:
     Config.load_default() if args.config is None else Config.from_yaml(args.config)
 
     service_content = """[Unit]

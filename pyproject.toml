@@ -15,7 +15,6 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "pydantic>=2.0",
@@ -28,6 +27,7 @@ dev = [
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "types-PyYAML>=6.0",
 ]
 
 [project.scripts]
@@ -56,3 +56,9 @@ python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "types-pyyaml>=6.0.12.20250915",
+]
