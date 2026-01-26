@@ -9,8 +9,23 @@ def setup_logging(config: Config) -> logging.Logger:
     log_path = Path(config.log_file).expanduser()
 
     # Create log directory with secure permissions (0o700 - only owner can read/write/execute)
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    os.chmod(log_path.parent, 0o700)
+    # Use umask to set permissions atomically during creation to avoid TOCTOU race
+    old_umask = os.umask(0o077)  # Results in 0o700 permissions for newly created directories
+    try:
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+    finally:
+        os.umask(old_umask)  # Always restore the original umask
+
+    # Attempt to set permissions explicitly (in case directory already existed)
+    try:
+        stat_info = os.stat(log_path.parent)
+        # Only attempt chmod if we own the directory
+        if stat_info.st_uid == os.getuid():
+            os.chmod(log_path.parent, 0o700)
+    except (PermissionError, OSError):
+        # Directory may have been created by another process or we lack permissions
+        # Don't crash - we can still attempt to create the log file
+        pass
 
     logger = logging.getLogger("claude_reset_scheduler")
     logger.setLevel(getattr(logging, config.log_level))
