@@ -88,12 +88,21 @@ class Config(BaseModel):
     def validate_log_file(cls, v: str) -> str:
         """Validate log file path for security.
 
-        Ensures the path:
-        - Is within the user's home directory
-        - Is not a symlink
-        - Does not contain path traversal attempts
+        Allows:
+        - System-wide paths (/var/log/claude-reset-scheduler/)
+        - User home paths (~/.local/share/claude-reset-scheduler/)
         """
         log_path = Path(v).expanduser()
+
+        # Allow system-wide log directory
+        system_log_dir = Path("/var/log/claude-reset-scheduler")
+        try:
+            log_path.relative_to(system_log_dir)
+            return v
+        except ValueError:
+            pass
+
+        # Otherwise validate it's in home directory
         validate_safe_path(log_path)
         return v
 
