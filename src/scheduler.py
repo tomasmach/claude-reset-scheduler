@@ -13,8 +13,17 @@ from typing import Any
 from config import Config
 from pinger import send_ping
 
-STATE_DIR = Path("~/.local/state/claude-reset-scheduler").expanduser()
-STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+# Use system-wide state directory if available (systemd service)
+# Otherwise fall back to user home (development)
+SYSTEM_STATE_DIR = Path("/var/lib/claude-reset-scheduler")
+USER_STATE_DIR = Path("~/.local/state/claude-reset-scheduler").expanduser()
+
+if SYSTEM_STATE_DIR.exists() and os.access(SYSTEM_STATE_DIR, os.W_OK):
+    STATE_DIR = SYSTEM_STATE_DIR
+else:
+    STATE_DIR = USER_STATE_DIR
+    STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+
 LAST_PINGS_FILE = STATE_DIR / "last_pings.json"
 
 
