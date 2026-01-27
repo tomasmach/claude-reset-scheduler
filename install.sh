@@ -403,7 +403,7 @@ install_system() {
     info "Creating virtual environment..."
     cd "$INSTALL_DIR"
     uv venv
-    uv pip install pydantic pyyaml pytest
+    uv pip install .
     success "Virtual environment created"
 
     # Create runtime directories
@@ -418,10 +418,10 @@ install_system() {
 
     # Install systemd files
     info "Installing systemd service files..."
-    local python_path="$INSTALL_DIR/.venv/bin/python3"
+    local exec_path="$INSTALL_DIR/.venv/bin/claude-reset-scheduler"
 
     # Update service file with correct paths
-    sed -e "s|ExecStart=.*|ExecStart=$python_path -m claude_reset_scheduler run|" \
+    sed -e "s|ExecStart=.*|ExecStart=$exec_path run|" \
         -e "s|WorkingDirectory=.*|WorkingDirectory=$INSTALL_DIR|" \
         -e "s|Environment=PATH=.*|Environment=PATH=$INSTALL_DIR/.venv/bin:/usr/bin:/bin|" \
         -e "s|Environment=CLAUDE_RESET_SCHEDULER_CONFIG=.*|Environment=CLAUDE_RESET_SCHEDULER_CONFIG=$CONFIG_DIR/config.yaml|" \
