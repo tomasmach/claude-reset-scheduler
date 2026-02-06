@@ -1,0 +1,16 @@
+[Unit]
+Description=Claude Code Reset Timer - Spouští reset každý den v 7:30
+Documentation=https://github.com/tomasmach/claude-reset-scheduler
+
+[Timer]
+# Spustit každý den v 7:30
+OnCalendar=*-*-* 07:30:00
+
+# Přesnost timeru (spustí se do 1 minuty od naplánovaného času)
+AccuracySec=1min
+
+# Spustit při bootu pokud jsme čas zmeškali
+Persistent=true
+
+[Install]
+WantedBy=timers.target

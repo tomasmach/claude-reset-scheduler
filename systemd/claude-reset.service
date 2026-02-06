@@ -1,0 +1,34 @@
+[Unit]
+Description=Claude Code Reset - Reset 5h limit window
+Documentation=https://github.com/tomasmach/claude-reset-scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Spustíme pod uživatelem (musí být nastaveno při instalaci)
+User=%I
+
+# Environment variables - API klíč pro Claude
+# Může být nastaven zde nebo v souboru ~/.config/claude-reset-scheduler/env
+Environment="HOME=/home/%I"
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=-/home/%I/.config/claude-reset-scheduler/env
+
+# Cesta ke skriptu
+ExecStart=/opt/claude-reset-scheduler/scripts/claude-reset.sh
+
+# Logování
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=claude-reset
+
+# Zabezpečení - omezení oprávnění
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/%I/.local/share/claude-reset-scheduler
+
+# Timeout - max 2 minuty na dokončení
+TimeoutSec=120
